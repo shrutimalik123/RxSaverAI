@@ -1,0 +1,5 @@
+{
+  "name": "RxSaver AI",
+  "description": "A smart pharmacy savings companion that instantly compares drug prices across major US pharmacies, finding coupons, manufacturer rebates, and discounts to help you save on prescriptions.",
+  "requestFramePermissions": []
+}
