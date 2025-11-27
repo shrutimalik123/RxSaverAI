@@ -7,7 +7,13 @@ export const fetchDrugPricing = async (drugName: string, dosage?: string): Promi
   const model = "gemini-2.5-flash";
 
   let prompt = `
-    Generate realistic pharmaceutical pricing data for the drug "${drugName}" in the US market. 
+    Act as a pharmaceutical pricing aggregator. Generate realistic pricing data for the drug "${drugName}" in the US market.
+    
+    You must simulate data from three specific sources:
+    1. **Manufacturer Coupon Database**: Search for official manufacturer copay cards, savings programs, or rebates. 
+    2. **Low Price API**: Identify the single absolute lowest cash price available at a major chain (often Walmart, Costco, or a specific grocery chain).
+    3. **Price Comparison API**: Identify 3-4 competitive prices from other major nationwide chains (CVS, Walgreens, Rite Aid) to allow for comparison.
+
   `;
 
   if (dosage) {
@@ -17,18 +23,18 @@ export const fetchDrugPricing = async (drugName: string, dosage?: string): Promi
   }
     
   prompt += `
-    Include:
-    1. Basic drug info (brand name, generic name, short medical description).
-    2. A list of common dosages (e.g., 10mg, 20mg) and common quantities (e.g., 30, 90).
-    3. The specific "pricingBasis" (dosage, quantity, form) that the prices below correspond to.
-    4. Manufacturer coupon availability details if applicable.
-    5. A list of 5-8 pricing options from major US pharmacy chains (e.g., CVS, Walgreens, Walmart, Rite Aid, Kroger, Costco).
+    Output Requirements:
+    1. Basic drug info (brand name, generic name, medical description).
+    2. List common dosages and quantities.
+    3. The "pricingBasis" used.
+    4. **Manufacturer Coupon**: If exists, provide program name, savings summary (e.g., "Pay as little as $5"), and eligibility.
+    5. **Pricing Options**: Combine the result of the "Low Price API" and "Price Comparison API" into a list of 4-6 pharmacies.
     
-    For pricing:
-    - "retailPrice" should be the high cash price (cost price) without insurance.
-    - "couponPrice" should be a significantly lower discounted price found via coupons.
-    - "couponProvider" should vary (e.g., "GoodRx", "SingleCare", "Manufacturer", "RxSaver").
-    - Ensure realistic price variations.
+    For pricing fields:
+    - "retailPrice": The high "U&C" (Usual & Customary) cost price of the drug without insurance/coupons.
+    - "couponPrice": The discounted price using a coupon.
+    - "couponProvider": e.g., "GoodRx", "SingleCare", "Manufacturer", "RxSaver".
+    - Ensure significant savings are shown between retailPrice and couponPrice.
   `;
 
   const response = await ai.models.generateContent({
@@ -44,7 +50,7 @@ export const fetchDrugPricing = async (drugName: string, dosage?: string): Promi
           description: { type: Type.STRING },
           commonDosages: { type: Type.ARRAY, items: { type: Type.STRING } },
           commonQuantities: { type: Type.ARRAY, items: { type: Type.NUMBER } },
-          form: { type: Type.STRING, description: "e.g. Tablet, Capsule, Tube" },
+          form: { type: Type.STRING },
           pricingBasis: {
             type: Type.OBJECT,
             properties: {
@@ -57,8 +63,11 @@ export const fetchDrugPricing = async (drugName: string, dosage?: string): Promi
             type: Type.OBJECT,
             properties: {
               available: { type: Type.BOOLEAN },
+              programName: { type: Type.STRING, description: "Name of the savings program" },
+              savingsSummary: { type: Type.STRING, description: "Short headline of savings, e.g. Pay $0" },
               details: { type: Type.STRING },
-              url: { type: Type.STRING }
+              url: { type: Type.STRING },
+              eligibility: { type: Type.STRING }
             }
           },
           pricingOptions: {
@@ -67,8 +76,8 @@ export const fetchDrugPricing = async (drugName: string, dosage?: string): Promi
               type: Type.OBJECT,
               properties: {
                 pharmacyName: { type: Type.STRING },
-                retailPrice: { type: Type.NUMBER },
-                couponPrice: { type: Type.NUMBER },
+                retailPrice: { type: Type.NUMBER, description: "High cash/cost price" },
+                couponPrice: { type: Type.NUMBER, description: "Low coupon price" },
                 savingsPercentage: { type: Type.NUMBER },
                 couponType: { type: Type.STRING, enum: Object.values(CouponType) },
                 couponProvider: { type: Type.STRING },

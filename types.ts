@@ -22,6 +22,15 @@ export interface PricingBasis {
   form: string;
 }
 
+export interface ManufacturerCoupon {
+  available: boolean;
+  programName?: string;
+  savingsSummary?: string;
+  details: string;
+  url?: string;
+  eligibility?: string;
+}
+
 export interface DrugDetails {
   brandName: string;
   genericName: string;
@@ -30,11 +39,7 @@ export interface DrugDetails {
   commonQuantities: number[];
   form: string; // e.g. "Tablet", "Capsule", "Cream"
   pricingBasis: PricingBasis; // The specific configuration these prices are for
-  manufacturerCoupon?: {
-    available: boolean;
-    details: string;
-    url?: string;
-  };
+  manufacturerCoupon?: ManufacturerCoupon;
   pricingOptions: PharmacyPricing[];
   lastUpdated: string;
 }

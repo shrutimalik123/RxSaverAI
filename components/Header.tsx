@@ -11,18 +11,6 @@ export const Header: React.FC = () => {
           </div>
           <span className="font-bold text-xl text-slate-800 tracking-tight">RxSaver<span className="text-teal-500">AI</span></span>
         </div>
-        
-        <nav className="hidden md:flex items-center gap-8">
-          <span className="text-slate-600 hover:text-slate-900 font-medium text-sm cursor-pointer">Drugs A-Z</span>
-          <span className="text-slate-600 hover:text-slate-900 font-medium text-sm cursor-pointer">Coupons</span>
-          <span className="text-slate-600 hover:text-slate-900 font-medium text-sm cursor-pointer">Savings Tips</span>
-        </nav>
-
-        <div className="flex items-center gap-4">
-          <button className="bg-teal-500 hover:bg-teal-600 text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors shadow-sm shadow-teal-200">
-            Get Savings Card
-          </button>
-        </div>
       </div>
     </header>
   );
