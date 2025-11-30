@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DrugDetails, PharmacyPricing } from '../types';
-import { Tag, ExternalLink, AlertCircle, CheckCircle2, MapPin, ArrowRight, Settings2, DollarSign, Info, X, Printer, Share2 } from 'lucide-react';
+import { Tag, ExternalLink, AlertCircle, CheckCircle2, MapPin, ArrowRight, Settings2, DollarSign, Info, X, Share2, Check } from 'lucide-react';
 
 interface ResultsViewProps {
   data: DrugDetails;
@@ -17,6 +17,8 @@ interface CouponModalProps {
 }
 
 const CouponModal: React.FC<CouponModalProps> = ({ isOpen, onClose, data, pricing, quantity, dosage }) => {
+  const [isCopied, setIsCopied] = useState(false);
+
   if (!isOpen) return null;
   
   const quantityMultiplier = quantity / data.pricingBasis.quantity;
@@ -28,11 +30,96 @@ const CouponModal: React.FC<CouponModalProps> = ({ isOpen, onClose, data, pricin
   const group = "DR33";
   const memberId = `W${Math.random().toString(36).substring(2, 11).toUpperCase()}`;
 
+  const handleShare = async () => {
+    const shareText = `RxSaver Coupon\n${data.brandName} (${data.genericName})\n${quantity} ${data.form}s • ${dosage}\n\nPrice: $${finalPrice.toFixed(2)} at ${pricing.pharmacyName}\n\nProcessing Info:\nBIN: ${bin}\nPCN: ${pcn}\nGRP: ${group}\nID: ${memberId}`;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `RxSaver Coupon: ${data.brandName}`,
+          text: shareText,
+        });
+      } catch (err) {
+        // User cancelled or error
+        console.log('Share cancelled');
+      }
+    } else {
+      // Fallback to clipboard
+      try {
+        await navigator.clipboard.writeText(shareText);
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy', err);
+      }
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
-        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden scale-100 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
-            <div className="bg-teal-600 p-6 text-white relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4 z-20">
+        <style>
+          {`
+            @media print {
+              @page {
+                margin: 0.5cm;
+                size: auto;
+              }
+
+              body {
+                visibility: hidden;
+                background-color: white;
+              }
+              
+              /* Hide all elements by default */
+              body * {
+                visibility: hidden;
+              }
+
+              /* Coupon Container - Fixed positioning relative to page */
+              #printable-coupon {
+                visibility: visible !important;
+                position: fixed !important;
+                left: 50% !important;
+                top: 20px !important;
+                transform: translateX(-50%) !important;
+                width: 100% !important;
+                max-width: 500px !important; 
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                z-index: 9999 !important;
+                background-color: white !important;
+                border: 1px solid #e2e8f0 !important;
+                border-radius: 12px !important;
+              }
+
+              /* Make sure children of the card are visible */
+              #printable-coupon * {
+                visibility: visible !important;
+              }
+
+              /* Ensure background colors/images are printed */
+              * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+              }
+
+              /* Hide the buttons (Print, Share, Close) */
+              .print\\:hidden {
+                display: none !important;
+              }
+              
+              /* Reset body height to ensure content fits */
+              html, body {
+                height: auto !important;
+                overflow: visible !important;
+              }
+            }
+          `}
+        </style>
+        <div id="printable-coupon" className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden scale-100 animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+            <div className="bg-teal-600 p-6 text-white relative overflow-hidden print-exact">
+                <div className="absolute top-0 right-0 p-4 z-20 print:hidden">
                   <button onClick={onClose} className="text-teal-100 hover:text-white hover:bg-teal-500/50 rounded-full p-1 transition-colors">
                       <X className="w-6 h-6" />
                   </button>
@@ -43,25 +130,25 @@ const CouponModal: React.FC<CouponModalProps> = ({ isOpen, onClose, data, pricin
                 </div>
                 
                 {/* Decorative circles */}
-                <div className="absolute -top-10 -left-10 w-32 h-32 bg-teal-500 rounded-full opacity-50 blur-2xl"></div>
-                <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-teal-400 rounded-full opacity-30 blur-2xl"></div>
+                <div className="absolute -top-10 -left-10 w-32 h-32 bg-teal-500 rounded-full opacity-50 blur-2xl print:hidden"></div>
+                <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-teal-400 rounded-full opacity-30 blur-2xl print:hidden"></div>
             </div>
 
             <div className="p-6">
                 <div className="text-center mb-6">
                     <h2 className="text-xl font-bold text-slate-900">{data.brandName}</h2>
                     <p className="text-slate-500 font-medium">{data.genericName}</p>
-                    <div className="inline-flex items-center mt-2 px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-600 uppercase tracking-wide border border-slate-200">
+                    <div className="inline-flex items-center mt-2 px-3 py-1 bg-slate-100 rounded-full text-xs font-bold text-slate-600 uppercase tracking-wide border border-slate-200 print-exact">
                         {quantity} {data.form}s • {dosage}
                     </div>
                 </div>
 
-                <div className="flex justify-between items-stretch bg-slate-50 rounded-xl border border-slate-200 mb-6 overflow-hidden">
+                <div className="flex justify-between items-stretch bg-slate-50 rounded-xl border border-slate-200 mb-6 overflow-hidden print-exact">
                     <div className="flex-1 p-4 border-r border-slate-200">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Pharmacy</p>
                         <p className="font-bold text-slate-800 leading-tight">{pricing.pharmacyName}</p>
                     </div>
-                     <div className="flex-1 p-4 text-right bg-teal-50/50">
+                     <div className="flex-1 p-4 text-right bg-teal-50/50 print-exact">
                         <p className="text-[10px] font-bold text-teal-600/70 uppercase tracking-wider mb-1">Your Price</p>
                         <p className="font-bold text-teal-700 text-2xl leading-none">${finalPrice.toFixed(2)}</p>
                     </div>
@@ -86,15 +173,13 @@ const CouponModal: React.FC<CouponModalProps> = ({ isOpen, onClose, data, pricin
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="print:hidden">
                    <button 
-                      onClick={() => window.print()} 
-                      className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-sm transition-colors"
+                      onClick={handleShare}
+                      className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-sm transition-colors"
                    >
-                      <Printer className="w-4 h-4" /> Print
-                   </button>
-                   <button className="flex items-center justify-center gap-2 px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-lg text-sm transition-colors">
-                      <Share2 className="w-4 h-4" /> Save
+                      {isCopied ? <Check className="w-4 h-4" /> : <Share2 className="w-4 h-4" />}
+                      {isCopied ? 'Copied' : 'Share Coupon'}
                    </button>
                 </div>
             </div>
